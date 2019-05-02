@@ -1,7 +1,10 @@
 "use strict";
 
-const parser = require('../parser')
-
+import {
+    parser,
+    parse,
+    Parser
+} from '../parser'
 
 var lol = function (onDone, onPaused) {
 
@@ -1048,8 +1051,9 @@ lol.builtIns = {
     }
 };
 
-// Node exports.
-module.exports = {
+export {
     lol,
-    parser
+    parser,
+    parse,
+    Parser
 };

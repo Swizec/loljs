@@ -3,12 +3,13 @@
     "version": "1.1.0",
     "description": "LOLCODE to JavaScript compiler by @markwatkinson, adapted for modern JS",
     "main": "dist/loljs.js",
+    "source": "src/index.js",
     "dependencies": {
         "async": "*"
     },
     "scripts": {
         "test": "node tests/run.js",
-        "build": "microbundle -i src/lol.js -o dist",
+        "build": "microbundle -i src/index.js -o dist",
         "prepare": "npm run build"
     },
     "files": [
