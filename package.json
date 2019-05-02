@@ -1,6 +1,6 @@
 {
     "name": "@swizec/loljs",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "LOLCODE to JavaScript compiler by @markwatkinson, adapted for modern JS",
     "main": "dist/loljs.js",
     "dependencies": {
@@ -14,7 +14,10 @@
     "files": [
         "dist/"
     ],
-    "keywords": ["lolcode", "compiler"],
+    "keywords": [
+        "lolcode",
+        "compiler"
+    ],
     "devDependencies": {
         "jison": "0.4.13",
         "nodeunit": "*",
