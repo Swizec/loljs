@@ -1,7 +1,9 @@
 "use strict";
 
+const parser = require('../parser')
 
-var lol = function(onDone, onPaused) {
+
+var lol = function (onDone, onPaused) {
 
     /**
      * Interpreter scope data/stack.
@@ -28,13 +30,13 @@ var lol = function(onDone, onPaused) {
      * These can (and should) be overridden.
      */
     this._io = {
-        visible: function(var_args) {
+        visible: function (var_args) {
             if (!console || typeof console.log !== 'function') {
                 throw new Error('console.log() not available');
             }
             console.log.apply(console, lol.utils.argsArray(arguments));
         },
-        prompt: function(message, reply) {
+        prompt: function (message, reply) {
             var response;
             if (typeof prompt === 'function') {
                 response = prompt(message);
@@ -47,8 +49,8 @@ var lol = function(onDone, onPaused) {
 
     this._isPaused = false;
 
-    this._done = onDone || function() {};
-    this._paused = onPaused || function() {};
+    this._done = onDone || function () {};
+    this._paused = onPaused || function () {};
 
     this._currentNode = null;
 
@@ -61,7 +63,7 @@ var lol = function(onDone, onPaused) {
  * Defers an action to execute only after a set of nodes has been evaluated.
  * Nodes will be evaluated in the order given.
  */
-lol.prototype._waitFor = function(nodes, f, options) {
+lol.prototype._waitFor = function (nodes, f, options) {
     options = options || {
         setIt: false,
         breakOnReturn: false
@@ -78,14 +80,13 @@ lol.prototype._waitFor = function(nodes, f, options) {
 /**
  * Handles an action created with _waitFor.
  */
-lol.prototype._current = function(current) {
+lol.prototype._current = function (current) {
     var self = this;
     var node = current.nodes.shift();
     if (!node) {
         if (current.inProgress) {
             return;
-        }
-        else {
+        } else {
             // special case: there were no arguments.
             current.f(current.results);
             self._currentNode = null;
@@ -95,14 +96,13 @@ lol.prototype._current = function(current) {
 
     current.inProgress = true;
 
-    this._evaluate(node, function(ret) {
+    this._evaluate(node, function (ret) {
         if (current.options.setIt) {
             self._setSymbol('IT', ret);
         }
         current.results.push(ret);
-        if (!current.nodes.length || (current.options.breakOnReturn
-                && typeof self._getSpecial('return') !== 'undefined'))
-        {
+        if (!current.nodes.length || (current.options.breakOnReturn &&
+                typeof self._getSpecial('return') !== 'undefined')) {
             current.f(current.results);
             self._currentNode = null;
         } else {
@@ -112,7 +112,7 @@ lol.prototype._current = function(current) {
 }
 
 
-lol.prototype.next = function() {
+lol.prototype.next = function () {
     if (this.errors().length) {
         // nope
         this.pause();
@@ -126,30 +126,30 @@ lol.prototype.next = function() {
 };
 
 
-lol.prototype.resume = function() {
+lol.prototype.resume = function () {
     this._isPaused = false;
     this.tick.go();
 }
 
-lol.prototype.pause = function(keepQuiet) {
+lol.prototype.pause = function (keepQuiet) {
     this._isPaused = true;
     if (!keepQuiet) {
         this._paused.call(this);
     }
 }
 
-lol.prototype._error = function(err) {
+lol.prototype._error = function (err) {
     this._errors.push(err);
     this.tick.cancel();
     this.pause();
 }
 
 
-lol.prototype.errors = function() {
+lol.prototype.errors = function () {
     return this._errors;
 }
 
-lol.prototype.pos = function() {
+lol.prototype.pos = function () {
     var c = this._currentNode._location;
     return {
         line: c.first_line - 1,
@@ -159,15 +159,17 @@ lol.prototype.pos = function() {
     };
 }
 
-lol.prototype._push = function(s) {
-    if (!s.name) { throw new Error('Scope must have name'); }
+lol.prototype._push = function (s) {
+    if (!s.name) {
+        throw new Error('Scope must have name');
+    }
     s.symbols = s.symbols || {};
     s.listeners = s.listeners || [];
     s.symbols.IT = null;
     this._scope.push(s);
 };
 
-lol.prototype._pop = function(name) {
+lol.prototype._pop = function (name) {
     var popped = this._scope.pop();
     if (!popped || popped.name !== name) {
         var msg = "Couldn't pop state " + name + '.\nStack:\n';
@@ -179,7 +181,7 @@ lol.prototype._pop = function(name) {
     }
 };
 
-lol.prototype.getSymbol = function(name) {
+lol.prototype.getSymbol = function (name) {
     var scope = this._scope;
     for (var i = scope.length - 1; i >= 0; i--) {
         if (scope[i].symbols.hasOwnProperty(name)) {
@@ -188,7 +190,7 @@ lol.prototype.getSymbol = function(name) {
     }
     throw new Error('No such symbol: ' + name);
 };
-lol.prototype._setSymbol = function(name, value) {
+lol.prototype._setSymbol = function (name, value) {
     var scope = this._scope;
     for (var i = scope.length - 1; i >= 0; i--) {
         if (scope[i].symbols.hasOwnProperty(name)) {
@@ -205,11 +207,11 @@ lol.prototype._setSymbol = function(name, value) {
  * If name is an array, the highest instance of any of the given scopes is returned.
  * If name is not given, the current scope is returned.
  */
-lol.prototype._findScope = function(name) {
+lol.prototype._findScope = function (name) {
     var scope = this._scope;
 
     if (!name) {
-        return scope[scope.length -1];
+        return scope[scope.length - 1];
     }
 
     var isS = typeof name === 'string';
@@ -223,45 +225,44 @@ lol.prototype._findScope = function(name) {
     return null;
 };
 
-lol.prototype._findScopeForSpecial = function(symbol) {
+lol.prototype._findScopeForSpecial = function (symbol) {
     if (symbol === 'return') {
         return this._findScope('function');
     } else if (symbol === 'switch-condition') {
         return this._findScope('switch');
     } else if (symbol === 'broken') {
         return this._findScope(['switch', 'loop'])
-    }
-    else {
+    } else {
         return this._scope[this._scope.length - 1];
     }
 }
 
-lol.prototype._setSpecial = function(name, value) {
+lol.prototype._setSpecial = function (name, value) {
     var s = this._findScopeForSpecial(name);
     if (s) {
         s[name] = value;
     } else {
-//         debugger;
+        //         debugger;
     }
 };
 
-lol.prototype._getSpecial = function(name) {
+lol.prototype._getSpecial = function (name) {
     var s = this._findScopeForSpecial(name);
     if (s) {
         return s[name];
     } else {
-//         debugger;
+        //         debugger;
     }
 };
 
-lol.prototype._listen = function(event, action) {
+lol.prototype._listen = function (event, action) {
     this._findScope().listeners.push({
         event: event,
         action: action
     });
 };
 
-lol.prototype._emit = function(event) {
+lol.prototype._emit = function (event) {
     var brk = false;
     for (var i = this._scope.length - 1; i >= 0 && !brk; i--) {
         var s = this._scope[i];
@@ -276,7 +277,7 @@ lol.prototype._emit = function(event) {
 }
 
 
-lol.prototype._index = function(val, index) {
+lol.prototype._index = function (val, index) {
     if (!val || typeof val.length === 'undefined') {
         throw new Error('Not indexable');
     }
@@ -287,12 +288,10 @@ lol.prototype._index = function(val, index) {
 
     if (typeof val === 'string') {
         return val.charAt(normalisedIndex);
-    }
-    else if (Object.prototype.toString.call(val) === '[object Array]') {
+    } else if (Object.prototype.toString.call(val) === '[object Array]') {
         if (normalisedIndex < val.length) {
             return val[normalisedIndex];
-        }
-        else {
+        } else {
             throw new Error('Index ' + index + ' out of range');
         }
     } else {
@@ -300,7 +299,7 @@ lol.prototype._index = function(val, index) {
     }
 };
 
-lol.prototype._setIndex = function(obj, val, index) {
+lol.prototype._setIndex = function (obj, val, index) {
     // Note this won't actually work for strings yet because they're immutable
     // We'll get back a different string than we sent in, which makes it
     // pretty much useless to the caller in the context of writing to a variable
@@ -310,7 +309,7 @@ lol.prototype._setIndex = function(obj, val, index) {
     if (!obj || typeof obj.length === 'undefined') {
         throw new Error('Not indexable');
     }
-    if (Object.prototype.toString.call(obj) === '[object Array]' ) {
+    if (Object.prototype.toString.call(obj) === '[object Array]') {
         while (index > obj.length - 1) {
             obj.push(null);
         }
@@ -326,14 +325,14 @@ lol.prototype._setIndex = function(obj, val, index) {
  *  NODE EVALUATION FUNCTIONS
  ****************************************************************************/
 
-lol.prototype._evaluateLiteral = function(node, done) {
+lol.prototype._evaluateLiteral = function (node, done) {
     var self = this;
-    if (Object.prototype.toString.call(node.value) === '[object Array]' ) {
-        this._waitFor(node.value, function(values) {
+    if (Object.prototype.toString.call(node.value) === '[object Array]') {
+        this._waitFor(node.value, function (values) {
             done(values);
         })
     } else if (typeof node.value === 'string') {
-        done(node.value.replace(/:\{([\w_]+)\}/g, function($0, $1) {
+        done(node.value.replace(/:\{([\w_]+)\}/g, function ($0, $1) {
             var v = $1;
             var replacement = $0;
             try {
@@ -343,15 +342,14 @@ lol.prototype._evaluateLiteral = function(node, done) {
             }
             return replacement;
         }));
-    }
-    else {
+    } else {
         done(node.value);
     }
 };
 
-lol.prototype._evaluateIndexer = function(node, done) {
+lol.prototype._evaluateIndexer = function (node, done) {
     var self = this;
-    this._waitFor([node.lhs, node.rhs], function(vals) {
+    this._waitFor([node.lhs, node.rhs], function (vals) {
         var lhs = vals[0],
             rhs = vals[1];
         var index = self._index(lhs, rhs);
@@ -359,14 +357,14 @@ lol.prototype._evaluateIndexer = function(node, done) {
     });
 };
 
-lol.prototype._evaluateFunctionCall = function(node, done) {
+lol.prototype._evaluateFunctionCall = function (node, done) {
     var self = this;
-    this._waitFor(node.args.values, function(args) {
+    this._waitFor(node.args.values, function (args) {
         var f;
         try {
             f = self.getSymbol(node.name);
             if (typeof f !== 'function') {
-                throw new Error(node.name + ' is not a function' );
+                throw new Error(node.name + ' is not a function');
             }
         } catch (err) {
             self._error('' + err);
@@ -376,15 +374,20 @@ lol.prototype._evaluateFunctionCall = function(node, done) {
     });
 };
 
-lol.prototype._evaluateBody = function(node, done) {
-    this._waitFor(node.lines, function(lines) {
+lol.prototype._evaluateBody = function (node, done) {
+    this._waitFor(node.lines, function (lines) {
         var ret = lines[lines.length - 1];
-        if (typeof ret === 'undefined') { ret = null; }
+        if (typeof ret === 'undefined') {
+            ret = null;
+        }
         done(ret);
-    }, {setIt: true, breakOnReturn: true});
+    }, {
+        setIt: true,
+        breakOnReturn: true
+    });
 };
 
-lol.prototype._evaluateIdentifier = function(node, done) {
+lol.prototype._evaluateIdentifier = function (node, done) {
     var s;
     try {
         s = this.getSymbol(node.name);
@@ -401,10 +404,10 @@ lol.prototype._evaluateIdentifier = function(node, done) {
     done(s);
 };
 
-lol.prototype._evaluateAssignmentIndex = function(node, val, done) {
+lol.prototype._evaluateAssignmentIndex = function (node, val, done) {
     var self = this;
     var path = [];
-    this._waitFor([node.name.lhs, node.name.rhs, node.value], function(vals) {
+    this._waitFor([node.name.lhs, node.name.rhs, node.value], function (vals) {
         var lhs = vals[0],
             rhs = vals[1],
             value = vals[2];
@@ -413,15 +416,15 @@ lol.prototype._evaluateAssignmentIndex = function(node, val, done) {
     });
 };
 
-lol.prototype._evaluateAssignmentNormal = function(node, val, done) {
+lol.prototype._evaluateAssignmentNormal = function (node, val, done) {
     this._setSymbol(node.name, val);
     done(val);
 }
 
-lol.prototype._evaluateAssignment = function(node, done) {
+lol.prototype._evaluateAssignment = function (node, done) {
 
     var self = this;
-    this._waitFor([node.value], function(values) {
+    this._waitFor([node.value], function (values) {
         var val = values[0];
         if (node.name._name === 'Indexer') {
             self._evaluateAssignmentIndex(node, val, done);
@@ -431,36 +434,35 @@ lol.prototype._evaluateAssignment = function(node, done) {
     });
 };
 
-lol.prototype.evaluate = function(node, done) {
+lol.prototype.evaluate = function (node, done) {
     var self = this;
-    this._waitFor([node.value], function(values) {
+    this._waitFor([node.value], function (values) {
         self._setSymbol(node.name, values[0]);
         done(values[0]);
     });
 };
 
-lol.prototype._evaluateDeclaration = function(node, done) {
+lol.prototype._evaluateDeclaration = function (node, done) {
     var self = this;
     if (node.value) {
-        this._waitFor([node.value], function(values) {
+        this._waitFor([node.value], function (values) {
             self._setSymbol(node.name, values[0]);
             done(values[0]);
         });
-    }
-    else {
+    } else {
         self._setSymbol(node.name, null);
         done(null);
     }
 };
 
 
-lol.prototype._evaluateIf = function(node, done) {
+lol.prototype._evaluateIf = function (node, done) {
     var self = this;
     var c = node.condition;
 
     var eIfs = node.elseIfs.slice(0);
 
-    var eCondition = function(done) {
+    var eCondition = function (done) {
         if (c) {
             self._waitFor([c], done);
         } else {
@@ -468,20 +470,20 @@ lol.prototype._evaluateIf = function(node, done) {
         }
     }
 
-    var eBody = function(done) {
-        self._waitFor([node.body], function() {
+    var eBody = function (done) {
+        self._waitFor([node.body], function () {
             done(null);
         });
     }
 
-    var elseIfs = function(done) {
+    var elseIfs = function (done) {
         var e = eIfs.shift();
         if (!e) {
             done(false);
         } else {
-            self._waitFor([e.condition], function(v) {
+            self._waitFor([e.condition], function (v) {
                 if (v[0]) {
-                    self._waitFor([e.body], function(v) {
+                    self._waitFor([e.body], function (v) {
                         done(true);
                     });
                 } else {
@@ -492,14 +494,14 @@ lol.prototype._evaluateIf = function(node, done) {
         }
     }
 
-    eCondition(function(e) {
-        if (e) { eBody(done); }
-        else {
-            elseIfs(function(elseIfMatched) {
+    eCondition(function (e) {
+        if (e) {
+            eBody(done);
+        } else {
+            elseIfs(function (elseIfMatched) {
                 if (!elseIfMatched && node.elseBody) {
                     self._waitFor([node.elseBody], done);
-                }
-                else {
+                } else {
                     done(null);
                 }
             });
@@ -507,12 +509,12 @@ lol.prototype._evaluateIf = function(node, done) {
     });
 };
 
-lol.prototype._evaluateNoOp = function(node, done) {
+lol.prototype._evaluateNoOp = function (node, done) {
     // terminal.
     done(null);
 };
 
-lol.prototype._evaluateLoopCondition = function(node, done) {
+lol.prototype._evaluateLoopCondition = function (node, done) {
     var self = this;
     // Loops can have an empty condition, which is the equivalent of
     // while(true) {}.
@@ -520,13 +522,13 @@ lol.prototype._evaluateLoopCondition = function(node, done) {
     if (!node) {
         done(true);
     } else {
-        this._waitFor([node.expression], function(vals) {
-            done( (node.check === 'while') ? vals[0] : !vals[0] );
+        this._waitFor([node.expression], function (vals) {
+            done((node.check === 'while') ? vals[0] : !vals[0]);
         });
     }
 }
 
-lol.prototype._evaluateLoop = function(node, done) {
+lol.prototype._evaluateLoop = function (node, done) {
     var self = this;
     if (node.op) {
         try {
@@ -536,10 +538,12 @@ lol.prototype._evaluateLoop = function(node, done) {
             this._setSymbol(node.op.symbol, 0);
         }
     }
-    self._push({name: 'loop'});
+    self._push({
+        name: 'loop'
+    });
     self._setSpecial('broken', false);
 
-    var evalOp = function() {
+    var evalOp = function () {
         if (node.op) {
             var sym = self.getSymbol(node.op.symbol);
             sym = (node.op.command = 'inc' ? sym + 1 : sym - 1);
@@ -547,20 +551,20 @@ lol.prototype._evaluateLoop = function(node, done) {
         }
     }
 
-    var evalBody = function(done) {
+    var evalBody = function (done) {
         self._waitFor([node.body], done);
     };
 
-    var finish = function() {
+    var finish = function () {
         self._pop('loop');
         done(null);
     }
 
-    var loop = function() {
-        self._waitFor([node.condition], function(vals) {
+    var loop = function () {
+        self._waitFor([node.condition], function (vals) {
             var broken = self._getSpecial('broken');
             if ((node.condition === null || vals[0]) && !broken) {
-                evalBody(function() {
+                evalBody(function () {
                     evalOp();
                     loop();
                 });
@@ -570,14 +574,14 @@ lol.prototype._evaluateLoop = function(node, done) {
         });
     }
 
-    this._listen('break', function() {
+    this._listen('break', function () {
         finish();
         return true;
     });
     loop();
 }
 
-lol.prototype._callFunction = function(f, args, done) {
+lol.prototype._callFunction = function (f, args, done) {
     var self = this;
 
     this._push({
@@ -594,17 +598,17 @@ lol.prototype._callFunction = function(f, args, done) {
     }
     for (var i = 0; i < f._data.args.length; i++) {
         this._setSymbol(f._data.args[i],
-                        typeof args[i] === 'undefined' ? null : args[i]);
+            typeof args[i] === 'undefined' ? null : args[i]);
     }
 
-    f.call(self, function(ret) {
+    f.call(self, function (ret) {
         self._pop('function');
         done(ret);
     });
 };
 
 
-lol.prototype._evaluateFunctionDefinition = function(node, done) {
+lol.prototype._evaluateFunctionDefinition = function (node, done) {
     // terminal
 
     // we can keep consistency with natively implemented functions
@@ -618,7 +622,7 @@ lol.prototype._evaluateFunctionDefinition = function(node, done) {
     // and return their value. So the caller knows how to handle both, we'll
     // add an async property to the function. This should be ok.
 
-    var f = function(done) {
+    var f = function (done) {
         // The caller MUST set 'this'. We cannot rely on a 'self' variable in
         // the parent scope, because this introduces horrible, horrible bugs if
         // this object is cloned (i.e. this function will alter the state of a
@@ -629,7 +633,7 @@ lol.prototype._evaluateFunctionDefinition = function(node, done) {
         // We can use one for the next function though, as long as 'this' is
         // now correct.
         var self = this;
-        this._waitFor([node.body], function(lines) {
+        this._waitFor([node.body], function (lines) {
             var ret = self._getSpecial('return');
             if (typeof ret === 'undefined') {
                 ret = self.getSymbol('IT');
@@ -647,53 +651,57 @@ lol.prototype._evaluateFunctionDefinition = function(node, done) {
     };
 
 
-    this._setSymbol(node.name, f, {setIt: true});
+    this._setSymbol(node.name, f, {
+        setIt: true
+    });
     done(null);
 }
 
-lol.prototype._evaluateCast = function(node, done) {
+lol.prototype._evaluateCast = function (node, done) {
     var self = this;
-    this._waitFor([node.expression], function(vals) {
+    this._waitFor([node.expression], function (vals) {
         var raw = vals[0];
         var type = node.type.toUpperCase();
-        if (type === 'TROOF') { raw = !!raw; }
-        else if (type === 'NOOB') { raw = null; }
-        else if (type === 'YARN') { raw = lol.utils.toYarn(raw); }
-        else if (type === 'NUMBR' || type === 'NUMBAR') {
+        if (type === 'TROOF') {
+            raw = !!raw;
+        } else if (type === 'NOOB') {
+            raw = null;
+        } else if (type === 'YARN') {
+            raw = lol.utils.toYarn(raw);
+        } else if (type === 'NUMBR' || type === 'NUMBAR') {
             raw = Number(raw);
-        }
-        else {
+        } else {
             throw new Error('Unrecognised type: ' + type);
         }
         done(raw);
     });
 }
 
-lol.prototype._evaluateVisible = function(node, done) {
+lol.prototype._evaluateVisible = function (node, done) {
     var self = this;
-    this._waitFor([node.expression], function(vals) {
+    this._waitFor([node.expression], function (vals) {
         self._io.visible(lol.utils.toYarn(vals[0]));
         done(vals[0]);
     });
 };
-lol.prototype._evaluateGimmeh = function(node, done) {
+lol.prototype._evaluateGimmeh = function (node, done) {
     // terminal
     var self = this;
-    this._io.prompt('', function(reply) {
+    this._io.prompt('', function (reply) {
         self._setSymbol(node.variable, reply);
         done(reply);
     });
 };
 
-lol.prototype._evaluateReturn = function(node, done) {
+lol.prototype._evaluateReturn = function (node, done) {
     var self = this;
-    this._waitFor([node.expression], function(vals) {
+    this._waitFor([node.expression], function (vals) {
         self._setSpecial('return', vals[0])
         done(vals[0]);
     });
 };
 
-lol.prototype._evaluateSwitch = function(node, done) {
+lol.prototype._evaluateSwitch = function (node, done) {
     var self = this;
     var it = self.getSymbol('IT');
     this._push({
@@ -720,10 +728,9 @@ lol.prototype._evaluateSwitch = function(node, done) {
         }
         if (b._name === 'CaseDefault' || fall) {
             evalBranch(b);
-        }
-        else {
+        } else {
             // branch is a normal case statement and has an expression
-            self._waitFor([b.condition], function(vals) {
+            self._waitFor([b.condition], function (vals) {
                 var c = vals[0];
 
                 if (lol.builtIns['BOTH SAEM'](c, it)) {
@@ -736,13 +743,13 @@ lol.prototype._evaluateSwitch = function(node, done) {
     }
 
     function evalBranch(b) {
-        self._waitFor([b.body], function(vals) {
+        self._waitFor([b.body], function (vals) {
             fall = !self._getSpecial('broken');
             next();
         });
     }
 
-    this._listen('break', function() {
+    this._listen('break', function () {
         finish();
         return true;
     });
@@ -751,25 +758,24 @@ lol.prototype._evaluateSwitch = function(node, done) {
 
 };
 
-lol.prototype._evaluateBreak = function(node, done) {
+lol.prototype._evaluateBreak = function (node, done) {
     this._setSpecial('broken', true);
     if (this._emit('break')) {
         // Intentionally do not call done() - this branch is now dead.
         // Execution was resumed by listeners on the break event.
-    }
-    else {
+    } else {
         debugger;
         // no-one picked it up - we're not in a loop/switch
         done();
     }
 };
 
-lol.prototype._evaluateBreakpoint = function(node, done) {
+lol.prototype._evaluateBreakpoint = function (node, done) {
     this.pause();
     done();
 }
 
-lol.prototype._evaluate = function(node, done) {
+lol.prototype._evaluate = function (node, done) {
     this._currentNode = node;
 
     var handlers = {
@@ -781,29 +787,28 @@ lol.prototype._evaluate = function(node, done) {
         'Declaration': this._evaluateDeclaration,
         'FunctionCall': this._evaluateFunctionCall,
         'FunctionDefinition': this._evaluateFunctionDefinition,
-        'Gimmeh' : this._evaluateGimmeh,
+        'Gimmeh': this._evaluateGimmeh,
         'Identifier': this._evaluateIdentifier,
         'If': this._evaluateIf,
         'Indexer': this._evaluateIndexer,
         'Literal': this._evaluateLiteral,
-        'Loop' : this._evaluateLoop,
-        'LoopCondition' : this._evaluateLoopCondition,
+        'Loop': this._evaluateLoop,
+        'LoopCondition': this._evaluateLoopCondition,
         'NoOp': this._evaluateNoOp,
         'Return': this._evaluateReturn,
         'Switch': this._evaluateSwitch,
-        'Visible' : this._evaluateVisible
+        'Visible': this._evaluateVisible
     };
 
     var handler = handlers[node._name];
     if (!handler) {
         throw new Error('Not implemented: ' + node._name);
-    }
-    else {
+    } else {
         handler.call(this, node, done);
     }
 }
 
-lol.prototype._pushProgramState = function() {
+lol.prototype._pushProgramState = function () {
     // clone built ins, otherwise they're a reference to a static property,
     // i.e. a program could overwrite them and break them for all subsequent
     // executions.
@@ -815,10 +820,13 @@ lol.prototype._pushProgramState = function() {
             symbols[name] = lol.builtIns[name];
         }
     }
-    this._push({name: 'program', symbols: symbols});
+    this._push({
+        name: 'program',
+        symbols: symbols
+    });
 }
 
-lol.prototype._reset = function() {
+lol.prototype._reset = function () {
     this._scope.length = 0;
     this._next.length = 0;
     this._pushProgramState();
@@ -828,7 +836,7 @@ lol.prototype._reset = function() {
 };
 
 
-lol.prototype.evaluateWatchExpression = function(tree, done, error) {
+lol.prototype.evaluateWatchExpression = function (tree, done, error) {
     function cloneObj(s) {
         // The symbol table is a reference copy rather than a clone.
         // This is probably okay, as it means that the watch expressions
@@ -846,7 +854,7 @@ lol.prototype.evaluateWatchExpression = function(tree, done, error) {
 
     var l = new lol(done, error);
     l._io = this._io;
-    l._scope = this._scope.map(function(s) {
+    l._scope = this._scope.map(function (s) {
         return cloneObj(s);
     });
     if (!l._scope.length) {
@@ -857,14 +865,14 @@ lol.prototype.evaluateWatchExpression = function(tree, done, error) {
 
 
 
-lol.prototype.evaluate = function(tree, dontReset) {
+lol.prototype.evaluate = function (tree, dontReset) {
     var self = this;
 
     if (!dontReset) {
         this._reset();
     }
     var done = false;
-    this._evaluate(tree, function(ret) {
+    this._evaluate(tree, function (ret) {
         done = true;
         self._done.call(self, ret);
     });
@@ -889,9 +897,11 @@ lol.prototype.evaluate = function(tree, dontReset) {
     this.tick = {
         _cancel: false,
         _isRunning: false,
-        cancel: function() { this._cancel = true; },
+        cancel: function () {
+            this._cancel = true;
+        },
 
-        _go: function() {
+        _go: function () {
             var thisTick = this;
 
             // Let's try not to block for more than 200ms at a time.
@@ -909,7 +919,7 @@ lol.prototype.evaluate = function(tree, dontReset) {
                 self.next();
             }
             if (!done) {
-                lol.utils.nextTick(function() {
+                lol.utils.nextTick(function () {
                     thisTick._go();
                 });
             } else {
@@ -917,14 +927,16 @@ lol.prototype.evaluate = function(tree, dontReset) {
             }
         },
 
-        go: function() {
-            if (!this._isRunning) { this._go(); }
+        go: function () {
+            if (!this._isRunning) {
+                this._go();
+            }
         }
     };
     this.tick.go();
 };
 
-lol.prototype.setIo = function(object) {
+lol.prototype.setIo = function (object) {
     if (typeof object.visible === 'function') {
         this._io.visible = object.visible;
     }
@@ -938,27 +950,31 @@ lol.prototype.setIo = function(object) {
  * Static functions
  */
 lol.utils = {
-    toYarn: function(val) {
-        if (val === true) { return 'WIN'; }
-        else if (val === false) { return 'FAIL'; }
-        else if (val === null) { return 'NOOB'; }
-        else if (Object.prototype.toString.call(val) === '[object Array]') {
+    toYarn: function (val) {
+        if (val === true) {
+            return 'WIN';
+        } else if (val === false) {
+            return 'FAIL';
+        } else if (val === null) {
+            return 'NOOB';
+        } else if (Object.prototype.toString.call(val) === '[object Array]') {
             var ret = '[';
             for (var i = 0; i < val.length; i++) {
                 ret += lol.utils.toYarn(val[i]);
-                if (i !== val.length - 1) { ret += ', ' }
+                if (i !== val.length - 1) {
+                    ret += ', '
+                }
             }
             ret += ']';
             return ret;
-        }
-        else return '' + val;
+        } else return '' + val;
     }
 };
 
 /**
  * Converts an arguments object as a proper array.
  */
-lol.utils.argsArray = function(a) {
+lol.utils.argsArray = function (a) {
     return Array.prototype.slice.call(a);
 };
 
@@ -967,80 +983,73 @@ lol.utils.argsArray = function(a) {
  * LOLCODE built in functions.
  */
 lol.builtIns = {
-    'NOT' : function(a) {
+    'NOT': function (a) {
         return !a;
     },
-    'ANY OF' : function(var_args) {
+    'ANY OF': function (var_args) {
         var args = lol.utils.argsArray(arguments);
         for (var i = 0; i < args.length; i++) {
-            if (args[i]) { return true; }
+            if (args[i]) {
+                return true;
+            }
         }
         return false;
     },
-    'BIGGR OF': function(a, b) {
+    'BIGGR OF': function (a, b) {
         return Math.max(a, b);
     },
-    'SMALLR OF': function(a, b) {
+    'SMALLR OF': function (a, b) {
         return Math.min(a, b);
     },
-    'SUM OF' : function(a, b) {
+    'SUM OF': function (a, b) {
         return a + b;
     },
-    'DIFF OF' : function(a, b) {
+    'DIFF OF': function (a, b) {
         return a - b;
     },
-    'PRODUKT OF': function(a, b) {
+    'PRODUKT OF': function (a, b) {
         return a * b;
     },
-    'QUOSHUNT OF': function(a, b) {
+    'QUOSHUNT OF': function (a, b) {
         return a / b;
     },
-    'BOTH OF' : function(a, b) {
+    'BOTH OF': function (a, b) {
         return a && b;
     },
-    'EITHER OF' : function(a, b) {
+    'EITHER OF': function (a, b) {
         return a || b;
     },
-    'BOTH SAEM' : function(a, b) {
+    'BOTH SAEM': function (a, b) {
         return a === b;
     },
-    'SMOOSH' : function(var_args) {
+    'SMOOSH': function (var_args) {
         var args = lol.utils.argsArray(arguments);
-        return lol.utils.toYarn(args.reduce(function(a, b) {
+        return lol.utils.toYarn(args.reduce(function (a, b) {
             return lol.utils.toYarn(a) + lol.utils.toYarn(b);
         }));
     },
-    'BIGGR THAN' : function(a, b) { return a > b; },
-    'SMALLR THAN' : function(a, b) { return a < b; },
-    'MOD OF' : function(a, b) {  return a % b;  },
-    'LEN OF': function(a) {
+    'BIGGR THAN': function (a, b) {
+        return a > b;
+    },
+    'SMALLR THAN': function (a, b) {
+        return a < b;
+    },
+    'MOD OF': function (a, b) {
+        return a % b;
+    },
+    'LEN OF': function (a) {
         return a && typeof a.length !== 'undefined' ? a.length : null
     },
-    'ORD OF': function(a) {
+    'ORD OF': function (a) {
         return a && a.charCodeAt ? a.charCodeAt(0) : -1;
     },
-    'CHR OF': function(a) {
+    'CHR OF': function (a) {
         return String.fromCharCode(a);
     }
 };
 
-(function() {
-    var nextTick;
-    if (typeof setImmediate === 'function') {
-        nextTick = setImmediate;
-    } else if (typeof window !== 'undefined') {
-        if (window.setImmediate) { nextTick = window.setImmediate; }
-        else if (window.setTimeout) {
-            nextTick = function(f) { window.setTimeout(f, 0); }
-        }
-    }
-    if (!nextTick) {
-        throw new Error("Couldn't find setImmediate, or window.setTimeout");
-    }
-    lol.utils.nextTick = nextTick;
-}());
-
 // Node exports.
-if (typeof module !== 'undefined') {
-    module.exports = lol;
-}
+module.exports = {
+    lol,
+    parser
+};
