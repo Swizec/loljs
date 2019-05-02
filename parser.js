@@ -71,6 +71,9 @@
     recoverable: (boolean: TRUE when the parser has a error recovery rule available for this particular error)
   }
 */
+
+import ast from "./src/ast";
+
 var parser = (function() {
     var parser = {
         trace: function trace() {},
