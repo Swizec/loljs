@@ -1,7 +1,23 @@
 {
-    "dependencies" : {
-        "jison"   :  "0.4.13",
-        "nodeunit" : "*",
+    "name": "@swizec/loljs",
+    "version": "1.0.0",
+    "description": "LOLCODE to JavaScript compiler by @markwatkinson, adapted for modern JS",
+    "main": "dist/loljs.js",
+    "dependencies": {
         "async": "*"
-  }
+    },
+    "scripts": {
+        "test": "node tests/run.js",
+        "build": "microbundle -i src/lol.js -o dist",
+        "prepare": "npm run build"
+    },
+    "files": [
+        "dist/"
+    ],
+    "keywords": ["lolcode", "compiler"],
+    "devDependencies": {
+        "jison": "0.4.13",
+        "nodeunit": "*",
+        "microbundle": "^0.11.0"
+    }
 }

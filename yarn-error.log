@@ -1,0 +1,48 @@
+Arguments: 
+  /usr/local/bin/node /Users/Swizec/.yarn/bin/yarn.js
+
+PATH: 
+  /Users/Swizec/.yarn/bin:/Users/Swizec/go/bin:/opt/local/bin:/opt/local/sbin:/sw/bin:/sw/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/Swizec/clojure-contrib/launchers/bash:/usr/local/sbin:/usr/local/git/bin:/usr/X11R6/bin:/Users/Swizec/.rvm/gems/ruby-2.1.2/bin:/Users/Swizec/.rvm/gems/ruby-2.1.2@global/bin:/Users/Swizec/.rvm/rubies/ruby-2.1.2/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/opt/X11/bin:/Applications/Wireshark.app/Contents/MacOS:/usr/local/git/bin:/Users/Swizec/.rvm/bin:/Users/Swizec/.rvm/bin:/Applications/Postgres.app/Contents/Versions/9.4/bin
+
+Yarn version: 
+  1.15.2
+
+Node version: 
+  10.12.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  SyntaxError: /Users/Swizec/Documents/random-coding/loljs/package.json: Unexpected token } in JSON at position 410
+      at JSON.parse (<anonymous>)
+      at /Users/Swizec/.yarn/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/Users/Swizec/.yarn/lib/cli.js:304:30)
+      at /Users/Swizec/.yarn/lib/cli.js:315:13
+
+npm manifest: 
+  {
+      "name": "@swizec/loljs",
+      "version": "1.0.0",
+      "description": "LOLCODE to JavaScript compiler by @markwatkinson, adapted for modern JS",
+      "main": "dist/loljs.js",
+      "dependencies": {
+          "async": "*"
+      },
+      "files": [
+          "dist/"
+      ],
+      "keywords": ["lolcode", "compiler"],
+      "devDependencies": {
+          "jison": "0.4.13",
+          "nodeunit": "*",
+          "microbundle"
+      }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
